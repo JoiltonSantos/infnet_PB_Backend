@@ -1,0 +1,74 @@
+@page
+@model LegadoCultural.Pages.ContinuarAssistindo.IndexModel
+@{
+    ViewData["Title"] = "Continuar Assistindo";
+}
+
+<h1 class="mb-4">Continuar Assistindo</h1>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="text-center py-5">
+        <p class="text-muted fs-5">Você ainda não começou a assistir nenhum título.</p>
+        <a href="/Catalogo" class="btn btn-dark">Explorar Catálogo</a>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var item in Model.Items)
+        {
+            var v = item.Visualizacao;
+            var c = item.Conteudo;
+            var progressoClass = v.PercentualAssistido >= 50 ? "bg-success" : "bg-warning";
+            <div class="col-12">
+                <div class="card">
+                    <div class="row g-0 align-items-center">
+                        <div class="col-3 col-sm-2 col-md-1">
+                            <img src="@c.CapaUrl" class="img-fluid rounded-start"
+                                 alt="@c.Titulo"
+                                 style="height:80px; width:100%; object-fit:cover;" />
+                        </div>
+                        <div class="col-9 col-sm-10 col-md-11">
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-0">@c.Titulo</h6>
+                                        @if (item.Episodio is not null)
+                                        {
+                                            <small class="text-muted">
+                                                @item.Episodio.Titulo
+                                            </small>
+                                        }
+                                        <div class="progress mt-1" style="height:6px; max-width:300px;">
+                                            <div class="progress-bar @progressoClass" role="progressbar"
+                                                 style="width:@v.PercentualAssistido%"
+                                                 aria-valuenow="@v.PercentualAssistido" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            @v.PercentualAssistido.ToString("0")% &middot;
+                                            @v.UltimaVisualizacao.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <a href="/Catalogo/Detalhes?id=@c.Id" class="btn btn-sm btn-primary">
+                                            Continuar
+                                        </a>
+                                        <form method="post">
+                                            <input type="hidden" name="conteudoId" value="@c.Id" />
+                                            <button type="submit" asp-page-handler="Remover"
+                                                    class="btn btn-sm btn-outline-secondary">
+                                                Remover
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

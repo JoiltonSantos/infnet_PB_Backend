@@ -1,0 +1,86 @@
+@page
+@model LegadoCultural.Pages.Catalogo.IndexModel
+@using LegadoCultural.Models.Enums
+@{
+    ViewData["Title"] = "Catálogo";
+}
+
+<h1 class="mb-4">Catálogo</h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label for="Termo" class="form-label">Buscar</label>
+                    <input type="text" id="Termo" name="Termo" value="@Model.Termo"
+                           class="form-control" placeholder="Título, diretor ou ator..." />
+                </div>
+                <div class="col-md-2">
+                    <label for="Genero" class="form-label">Gênero</label>
+                    <select id="Genero" name="Genero" class="form-select">
+                        <option value="">Todos</option>
+                        @foreach (var g in Model.Generos)
+                        {
+                            <option value="@g" selected="@(Model.Genero == g)">@g</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="Ano" class="form-label">Ano</label>
+                    <select id="Ano" name="Ano" class="form-select">
+                        <option value="">Todos</option>
+                        @foreach (var a in Model.Anos)
+                        {
+                            <option value="@a" selected="@(Model.Ano == a)">@a</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="Ordenacao" class="form-label">Ordenar por</label>
+                    <select asp-for="Ordenacao" asp-items="Html.GetEnumSelectList<Ordenacao>()" class="form-select"></select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark flex-grow-1">Buscar</button>
+                    <a href="/Catalogo" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<p class="text-muted mb-3">@Model.Resultados.Count título(s) encontrado(s)</p>
+
+@if (Model.Resultados.Count == 0)
+{
+    <div class="alert alert-info">
+        Nenhum título encontrado para os filtros selecionados.
+    </div>
+}
+else
+{
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+        @foreach (var conteudo in Model.Resultados)
+        {
+            var tipo = conteudo is LegadoCultural.Models.Filme ? "Filme" : "Série";
+            var badgeClass = tipo == "Filme" ? "bg-primary" : "bg-success";
+            <div class="col">
+                <a href="/Catalogo/Detalhes?id=@conteudo.Id" class="text-decoration-none">
+                    <div class="card h-100 content-card">
+                        <img src="@conteudo.CapaUrl" class="card-img-top content-cover" alt="@conteudo.Titulo" />
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-1 text-dark">@conteudo.Titulo</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge @badgeClass">@tipo</span>
+                                <small class="text-muted">@conteudo.Ano</small>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-warning fw-bold">@conteudo.Avaliacao.ToString("0.0")</small>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}

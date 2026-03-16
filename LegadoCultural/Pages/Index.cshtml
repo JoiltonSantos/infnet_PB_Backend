@@ -1,0 +1,77 @@
+@page
+@model LegadoCultural.Pages.IndexModel
+@using LegadoCultural.Models
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="p-4 mb-4 bg-dark text-white rounded-3">
+    <div class="container-fluid py-2">
+        <h1 class="display-5 fw-bold">Legado Cultural</h1>
+        <p class="col-md-8 fs-5">O melhor do cinema em um só lugar.</p>
+        <a href="/Catalogo" class="btn btn-danger btn-lg">Explorar Catálogo</a>
+    </div>
+</div>
+
+@if (Model.ContinuarAssistindo.Count > 0)
+{
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0">Continuar Assistindo</h2>
+            <a href="/ContinuarAssistindo" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            @foreach (var item in Model.ContinuarAssistindo)
+            {
+                var v = item.Visualizacao;
+                var c = item.Conteudo;
+                <div class="col">
+                    <a href="/Catalogo/Detalhes?id=@c.Id" class="text-decoration-none">
+                        <div class="card h-100 content-card">
+                            <div class="position-relative">
+                                <img src="@c.CapaUrl" class="card-img-top content-cover" alt="@c.Titulo" />
+                                <div class="position-absolute bottom-0 start-0 end-0">
+                                    <div class="progress" style="height:4px; border-radius:0;">
+                                        <div class="progress-bar bg-danger" style="width:@v.PercentualAssistido%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-0 text-dark small">@c.Titulo</h6>
+                                <small class="text-muted">@v.PercentualAssistido.ToString("0")%</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<section class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Destaques</h2>
+        <a href="/Catalogo?Ordenacao=MelhorAvaliacao" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+    </div>
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+        @foreach (var conteudo in Model.Destaques)
+        {
+            var tipo = conteudo is Filme ? "Filme" : "Série";
+            var badgeClass = tipo == "Filme" ? "bg-primary" : "bg-success";
+            <div class="col">
+                <a href="/Catalogo/Detalhes?id=@conteudo.Id" class="text-decoration-none">
+                    <div class="card h-100 content-card">
+                        <img src="@conteudo.CapaUrl" class="card-img-top content-cover" alt="@conteudo.Titulo" />
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-1 text-dark small">@conteudo.Titulo</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge @badgeClass" style="font-size:.65rem;">@tipo</span>
+                                <small class="text-warning fw-bold">@conteudo.Avaliacao.ToString("0.0")</small>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+</section>

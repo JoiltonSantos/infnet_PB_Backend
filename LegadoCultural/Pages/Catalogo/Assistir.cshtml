@@ -1,0 +1,110 @@
+@page "{id:int}"
+@model LegadoCultural.Pages.Catalogo.AssistirModel
+@{
+    ViewData["Title"] = "Assistindo " + Model.Conteudo.Titulo;
+    string FormatarTempo(int s) => $"{s / 60:D2}:{s % 60:D2}";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="mb-3">
+    <a href="/Catalogo/Detalhes?id=@Model.Conteudo.Id" class="btn btn-outline-secondary btn-sm">Voltar</a>
+</div>
+
+<div class="card bg-dark text-white border-0 rounded-3 overflow-hidden shadow-lg" style="max-width:720px;">
+    <div class="card-body pb-2">
+        <p class="mb-0 fw-semibold fs-5">@Model.Conteudo.Titulo</p>
+        @if (!string.IsNullOrEmpty(Model.Subtitulo))
+        {
+            <small class="text-secondary">@Model.Subtitulo</small>
+        }
+    </div>
+
+    <div class="bg-black d-flex align-items-center justify-content-center position-relative"
+         style="height:340px; overflow:hidden;">
+        @if (!string.IsNullOrEmpty(Model.Conteudo.CapaUrl))
+        {
+            <img src="@Model.Conteudo.CapaUrl"
+                 class="position-absolute top-0 start-0 w-100 h-100"
+                 style="object-fit:cover; opacity:.18;" alt="" />
+        }
+        <button id="btnPlay"
+                class="btn btn-light rounded-circle shadow position-relative"
+                style="width:72px;height:72px;font-size:1.8rem;"
+                onclick="togglePlay()">▶</button>
+    </div>
+
+    <div class="card-body border-top border-secondary pt-3">
+        <input type="range" id="slider" class="form-range mb-1"
+               min="0" max="@Model.DuracaoSegundos" value="@Model.PontoInicial" />
+        <div class="d-flex justify-content-between">
+            <span id="lblAtual" class="text-secondary small">@FormatarTempo(Model.PontoInicial)</span>
+            <span class="text-secondary small">@FormatarTempo(Model.DuracaoSegundos)</span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const conteudoId = @Model.Conteudo.Id;
+    const episodioId = @(Model.EpisodioId.HasValue ? Model.EpisodioId.Value.ToString() : "null");
+    const duracao = @Model.DuracaoSegundos;
+    let posicao = @Model.PontoInicial;
+    let tocando = false;
+    let intervalo = null;
+    let ultimoSalvo = -1;
+
+    const slider = document.getElementById('slider');
+    const lblAtual = document.getElementById('lblAtual');
+    const btnPlay = document.getElementById('btnPlay');
+
+    function formatarTempo(s) {
+        return Math.floor(s / 60).toString().padStart(2, '0') + ':' + (s % 60).toString().padStart(2, '0');
+    }
+
+    function togglePlay() { tocando ? pausar() : tocar(); }
+
+    function tocar() {
+        if (posicao >= duracao) posicao = 0;
+        tocando = true;
+        btnPlay.textContent = '⏸';
+        intervalo = setInterval(() => {
+            posicao = Math.min(posicao + 1, duracao);
+            slider.value = posicao;
+            lblAtual.textContent = formatarTempo(posicao);
+            if (posicao % 10 === 0 || posicao === duracao) salvar();
+            if (posicao === duracao) pausar();
+        }, 1000);
+    }
+
+    function pausar() {
+        tocando = false;
+        btnPlay.textContent = '▶';
+        clearInterval(intervalo);
+        salvar();
+    }
+
+    async function salvar() {
+        if (posicao === ultimoSalvo) return;
+        ultimoSalvo = posicao;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        const body = new URLSearchParams({ conteudoId, segundos: posicao });
+        if (episodioId !== null) body.append('episodioId', episodioId);
+        await fetch(`/Catalogo/Assistir/${conteudoId}?handler=Salvar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': token
+            },
+            body
+        });
+    }
+
+    slider.addEventListener('input', () => {
+        posicao = parseInt(slider.value);
+        lblAtual.textContent = formatarTempo(posicao);
+    });
+    slider.addEventListener('change', () => salvar());
+    window.addEventListener('pagehide', () => salvar());
+</script>
+}

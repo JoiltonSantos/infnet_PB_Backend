@@ -1,0 +1,172 @@
+@page
+@model LegadoCultural.Pages.Catalogo.DetalhesModel
+@using LegadoCultural.Models
+@using LegadoCultural.Extensions
+@{
+    ViewData["Title"] = Model.Conteudo?.Titulo ?? "Detalhes";
+    var filme = Model.Conteudo as Filme;
+    var serie = Model.SerieDetalhes;
+    var progresso = Model.Progresso;
+}
+
+<div class="mb-3">
+    <a href="/Catalogo" class="btn btn-outline-secondary btn-sm">Voltar ao Catálogo</a>
+</div>
+
+@if (Model.Conteudo is null)
+{
+    <div class="alert alert-warning">Conteúdo não encontrado.</div>
+    return;
+}
+
+<div class="row g-4">
+    <div class="col-md-3 col-sm-4">
+        <img src="@Model.Conteudo.CapaUrl" class="img-fluid rounded shadow" alt="@Model.Conteudo.Titulo"
+             style="width:100%; aspect-ratio:2/3; object-fit:cover;" />
+    </div>
+    <div class="col-md-9 col-sm-8">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="h2 mb-0">@Model.Conteudo.Titulo</h1>
+            @if (Model.EhFilme)
+            {
+                <span class="badge bg-primary">Filme</span>
+            }
+            else
+            {
+                <span class="badge bg-success">Série</span>
+            }
+        </div>
+
+        <div class="text-muted mb-2">
+            @Model.Conteudo.Ano &middot; @Model.Conteudo.Idioma &middot;
+            <span class="badge bg-secondary">@Model.Conteudo.Classificacao.Exibir()</span>
+        </div>
+
+        <div class="mb-1">
+            <span class="text-warning fw-bold fs-5">@Model.Conteudo.Avaliacao.ToString("0.0")</span>
+        </div>
+
+        @if (filme is not null)
+        {
+            <p class="mb-1"><strong>Duração:</strong> @filme.Duracao min</p>
+        }
+        else if (serie is not null)
+        {
+            <p class="mb-1"><strong>Temporadas:</strong> @serie.TotalTemporadas</p>
+        }
+
+        <p class="mb-1"><strong>Diretor:</strong> @Model.Conteudo.Diretor</p>
+        <p class="mb-2"><strong>Elenco:</strong> @string.Join(", ", Model.Conteudo.Elenco)</p>
+        <p class="mb-3">@Model.Conteudo.Sinopse</p>
+
+        @if (progresso is not null && !progresso.Concluida)
+        {
+            <div class="mb-3">
+                <div class="progress mb-1" style="height:8px;">
+                    <div class="progress-bar bg-danger" role="progressbar"
+                         style="width:@progresso.PercentualAssistido%"></div>
+                </div>
+                <small class="text-muted">@progresso.PercentualAssistido.ToString("0")% assistido</small>
+            </div>
+        }
+        else if (progresso?.Concluida == true)
+        {
+            <div class="alert alert-success py-2 mb-3">Você já concluiu este título.</div>
+        }
+
+        @if (filme is not null)
+        {
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="/Catalogo/Assistir/@Model.Id" class="btn btn-primary">
+                    @(progresso is not null && !progresso.Concluida ? "Continuar" : "Assistir")
+                </a>
+                @if (progresso is not null && !progresso.Concluida)
+                {
+                    <form method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <button type="submit" asp-page-handler="Concluir" class="btn btn-outline-secondary">
+                            Marcar como Concluído
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+        else if (serie is not null)
+        {
+            <div class="mb-3">
+                <select id="episodioSelect" class="form-select" style="max-width:420px;">
+                    @foreach (var temporada in serie.Temporadas)
+                    {
+                        <optgroup label="@temporada.Titulo">
+                            @foreach (var ep in temporada.Episodios)
+                            {
+                                <option value="@ep.Id">Ep. @ep.Numero – @ep.Titulo (@ep.Duracao min)</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" onclick="irParaEpisodio()" class="btn btn-primary">Assistir episódio</button>
+                @if (progresso is not null && !progresso.Concluida)
+                {
+                    <form method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <button type="submit" asp-page-handler="Concluir" class="btn btn-outline-secondary">
+                            Marcar como Concluído
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (serie is not null)
+{
+    <hr class="mt-4" />
+    <h4 class="mb-3">Episódios</h4>
+    <div class="accordion" id="acordeonTemporadas">
+        @foreach (var temporada in serie.Temporadas)
+        {
+            var collapseId = $"temporada{temporada.Id}";
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button @(temporada.Numero > 1 ? "collapsed" : "")"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                        @temporada.Titulo
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse @(temporada.Numero == 1 ? "show" : "")">
+                    <div class="accordion-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var ep in temporada.Episodios)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>@ep.Numero.</strong> @ep.Titulo</span>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <small class="text-muted">@ep.Duracao min</small>
+                                        <a href="/Catalogo/Assistir/@Model.Id?episodioId=@ep.Id"
+                                           class="btn btn-sm btn-outline-primary">Assistir</a>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    @if (serie is not null)
+    {
+        <script>
+            function irParaEpisodio() {
+                const epId = document.getElementById('episodioSelect').value;
+                window.location.href = '/Catalogo/Assistir/@Model.Id?episodioId=' + epId;
+            }
+        </script>
+    }
+}
